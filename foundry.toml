@@ -1,0 +1,17 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+
+# Automatically detect solc version
+auto_detect_solc = true
+
+# Test Settings
+optimizer = true
+optimizer_runs = 200
+fuzz_runs = 256
+verbosity = 3
+
+[profile.ci]
+fuzz_runs = 1000
