@@ -13,6 +13,25 @@ import "../src/token/implementation/LuxShareFactory.sol";
 import "../src/token/implementation/LuxAssetNFT.sol";
 import "../src/token/storage/TokenStorage.sol";
 
+import "../src/market/implementation/PrimaryOffering.sol";
+import "../src/market/implementation/P2PTrading.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+// Mock USDC contract for testing
+contract MockUSDC is ERC20 {
+    uint8 constant _decimals = 6;
+
+    constructor() ERC20("USD Coin", "USDC") {}
+
+    function decimals() public pure override returns (uint8) {
+        return _decimals;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
+
 abstract contract BaseFixture is Test {
     // ============ Test Accounts ============
     address public admin; // System administrator
@@ -71,6 +90,13 @@ abstract contract BaseFixture is Test {
     TokenStorage.AssetMetadata public testAssetMetadata2;
     TokenStorage.ShareTokenConfig public testShareConfig1;
     TokenStorage.ShareTokenConfig public testShareConfig2;
+
+    // ============ USDC System ============
+    MockUSDC public usdc;
+
+    // ============ Market System ============
+    PrimaryOffering public primaryOffering;
+    P2PTrading public p2pTrading;
 
     function ONCHAINIDSetUp() public virtual {
         // ============ Setup Accounts ============
@@ -405,6 +431,28 @@ abstract contract BaseFixture is Test {
         shareTokenAddress2 = luxRWAFactory.createShareToken(address(luxRWAAssetNFT), tokenId2, testShareConfig2);
         vm.stopPrank();
         console.log("LuxRWATokenSetUp completed:issuerA has 10000 shares of Rolex Submariner and 10000 shares of Cartier Santos!");
+    }
+
+    function MarketSetUp() public virtual {
+        vm.startPrank(admin);
+        primaryOffering = new PrimaryOffering(address(luxRWAFactory), address(identityRegistry));
+        p2pTrading = new P2PTrading(address(luxRWAFactory), address(identityRegistry));
+
+        luxRWAFactory.addAgentRole(address(primaryOffering));
+        luxRWAFactory.addAgentRole(address(p2pTrading));
+
+        vm.stopPrank();
+        console.log("MarketSetUp completed!");
+
+        // Deploy USDC mock
+        usdc = new MockUSDC();
+        usdc.mint(investorAIA, 1000000 * 10**6); // 1M USDC
+        usdc.mint(investorAIB, 1000000 * 10**6); // 1M USDC
+        usdc.mint(investorAIC, 1000000 * 10**6); // 1M USDC
+        usdc.mint(investorAID, 1000000 * 10**6); // 1M USDC
+        usdc.mint(investorBIA, 1000000 * 10**6); // 1M USDC
+
+        console.log("USDC minted to investors");
     }
 
     function _issueClaimToIdentity(
