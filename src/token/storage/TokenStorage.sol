@@ -161,6 +161,9 @@ library TokenStorage {
         
         // Multi-compliance support (different compliance for different token types)
         mapping(address => IModularCompliance) tokenCompliance;  // Token -> Custom Compliance
+
+        // Agent roles
+        mapping(address => bool) agentRoles;
     }
 
     function shareFactoryLayout() internal pure returns (ShareFactoryLayout storage s) {

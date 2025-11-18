@@ -78,5 +78,56 @@ interface ILuxShareFactory {
      * @param compliance The address of the new compliance contract
      */
     function setTokenCompliance(address shareToken, address compliance) external;
+    
+    /**
+     * @dev Check if a share token is valid
+     * @param shareToken The address of the share token
+     * @return valid Whether the share token is valid
+     */
+    function isShareToken(address shareToken) external view returns (bool valid);
+    
+    /**
+     * @dev Freeze partial tokens of an address
+     * @param shareToken The address of the share token
+     * @param addr The user address to freeze tokens for
+     * @param amount The amount of tokens to freeze
+     */
+    function freezePartialTokens(address shareToken, address addr, uint256 amount) external;
+    
+    /**
+     * @dev Unfreeze partial tokens of an address
+     * @param shareToken The address of the share token
+     * @param addr The user address to unfreeze tokens for
+     * @param amount The amount of tokens to unfreeze
+     */
+    function unfreezePartialTokens(address shareToken, address addr, uint256 amount) external;
+
+    /**
+     * @dev Force transfer tokens between addresses
+     * @param shareToken The address of the share token
+     * @param from The address to transfer from
+     * @param to The address to transfer to
+     * @param amount The amount to transfer
+     */
+    function forcedTransfer(address shareToken, address from, address to, uint256 amount) external;
+
+    /**
+     * @dev Add an agent role to an address
+     * @param agent The address to add the agent role to
+     */
+    function addAgentRole(address agent) external;
+
+    /**
+     * @dev Remove an agent role from an address
+     * @param agent The address to remove the agent role from
+     */
+    function removeAgentRole(address agent) external;
+
+    /**
+     * @dev Check if an address has an agent role
+     * @param agent The address to check
+     * @return hasRole Whether the address has the agent role
+     */
+    function hasAgentRole(address agent) external view returns (bool hasRole);
 }
 

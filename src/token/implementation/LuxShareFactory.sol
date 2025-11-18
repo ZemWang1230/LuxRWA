@@ -29,6 +29,15 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
     event ComplianceSet(address indexed compliance);
     event IdentityRegistrySet(address indexed identityRegistry);
     event OperatorAuthorized(address indexed operator, bool status);
+    event AgentRoleAdded(address indexed agent);
+    event AgentRoleRemoved(address indexed agent);
+
+    // modifiers
+    modifier onlyAgentOrOwner() {
+        TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
+        require(s.agentRoles[msg.sender] || msg.sender == owner(), "LuxShareFactory: caller is not an agent or owner");
+        _;
+    }
 
     constructor() Ownable(msg.sender) {
         TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
@@ -69,7 +78,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
     function deployAssetNFT(
         string memory name_,
         string memory symbol_
-    ) external onlyOwner returns (address assetNFT) {
+    ) external onlyAgentOrOwner returns (address assetNFT) {
         TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
         // Deploy new AssetNFT
         LuxAssetNFT nft = new LuxAssetNFT(name_, symbol_, address(this), address(s.identityRegistry));
@@ -94,7 +103,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
         address assetNFT,
         address to,
         TokenStorage.AssetMetadata calldata metadata
-    ) external onlyOwner returns (uint256 tokenId) {
+    ) external onlyAgentOrOwner returns (uint256 tokenId) {
         require(_isValidAssetNFT(assetNFT), "LuxShareFactory: invalid asset NFT");
         require(to != address(0), "LuxShareFactory: mint to zero address");
 
@@ -106,7 +115,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param assetNFT The address of the AssetNFT contract
      * @param tokenId The ID of the asset to freeze
      */
-    function freezeAssetNFT(address assetNFT, uint256 tokenId) external onlyOwner {
+    function freezeAssetNFT(address assetNFT, uint256 tokenId) external onlyAgentOrOwner {
         require(_isValidAssetNFT(assetNFT), "LuxShareFactory: invalid asset NFT");
         ILuxAssetNFT(assetNFT).freeze(tokenId);
     }
@@ -116,7 +125,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param assetNFT The address of the AssetNFT contract
      * @param tokenId The ID of the asset to unfreeze
      */
-    function unfreezeAssetNFT(address assetNFT, uint256 tokenId) external onlyOwner {
+    function unfreezeAssetNFT(address assetNFT, uint256 tokenId) external onlyAgentOrOwner {
         require(_isValidAssetNFT(assetNFT), "LuxShareFactory: invalid asset NFT");
         ILuxAssetNFT(assetNFT).unfreeze(tokenId);
     }
@@ -126,7 +135,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param assetNFT The address of the AssetNFT contract
      * @param tokenId The ID of the asset to verify
      */
-    function verifyAssetNFT(address assetNFT, uint256 tokenId) external onlyOwner {
+    function verifyAssetNFT(address assetNFT, uint256 tokenId) external onlyAgentOrOwner {
         require(_isValidAssetNFT(assetNFT), "LuxShareFactory: invalid asset NFT");
         ILuxAssetNFT(assetNFT).verifyAsset(tokenId);
     }
@@ -144,7 +153,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
         address assetNFT,
         uint256 assetId,
         TokenStorage.ShareTokenConfig calldata config
-    ) external onlyOwner returns (address shareToken) {
+    ) external onlyAgentOrOwner returns (address shareToken) {
         TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
         
         // Validate inputs
@@ -210,7 +219,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param to The user address to mint to
      * @param amount The amount to mint
      */
-    function mintShareTokens(address shareToken, address to, uint256 amount) external onlyOwner {
+    function mintShareTokens(address shareToken, address to, uint256 amount) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).mint(to, amount);
     }
@@ -221,7 +230,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param from The user address to burn from
      * @param amount The amount to burn
      */
-    function burnShareTokens(address shareToken, address from, uint256 amount) external onlyOwner {
+    function burnShareTokens(address shareToken, address from, uint256 amount) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).burn(from, amount);
     }
@@ -230,7 +239,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @dev Pause a share token
      * @param shareToken The address of the share token
      */
-    function pauseShareToken(address shareToken) external onlyOwner {
+    function pauseShareToken(address shareToken) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).pause();
     }
@@ -239,7 +248,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @dev Unpause a share token
      * @param shareToken The address of the share token
      */
-    function unpauseShareToken(address shareToken) external onlyOwner {
+    function unpauseShareToken(address shareToken) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).unpause();
     }
@@ -249,7 +258,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param shareToken The address of the share token
      * @param addr The user address to freeze
      */
-    function freezeAddress(address shareToken, address addr) external onlyOwner {
+    function freezeAddress(address shareToken, address addr) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).freezeAddress(addr);
     }
@@ -259,7 +268,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param shareToken The address of the share token
      * @param addr The user address to unfreeze
      */
-    function unfreezeAddress(address shareToken, address addr) external onlyOwner {
+    function unfreezeAddress(address shareToken, address addr) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).unfreezeAddress(addr);
     }
@@ -270,7 +279,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param addr The user address to freeze tokens for
      * @param amount The amount of tokens to freeze
      */
-    function freezePartialTokens(address shareToken, address addr, uint256 amount) external onlyOwner {
+    function freezePartialTokens(address shareToken, address addr, uint256 amount) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).freezePartialTokens(addr, amount);
     }
@@ -281,7 +290,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param addr The user address to unfreeze tokens for
      * @param amount The amount of tokens to unfreeze
      */
-    function unfreezePartialTokens(address shareToken, address addr, uint256 amount) external onlyOwner {
+    function unfreezePartialTokens(address shareToken, address addr, uint256 amount) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).unfreezePartialTokens(addr, amount);
     }
@@ -293,7 +302,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param to The user address to transfer to
      * @param amount The amount to transfer
      */
-    function forcedTransfer(address shareToken, address from, address to, uint256 amount) external onlyOwner {
+    function forcedTransfer(address shareToken, address from, address to, uint256 amount) external onlyAgentOrOwner {
         require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
         ILuxShareToken(shareToken).forcedTransfer(from, to, amount);
     }
@@ -303,7 +312,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      * @param shareToken The address of the share token
      * @param compliance_ The address of the compliance module
      */
-    function setTokenCompliance(address shareToken, address compliance_) external onlyOwner {
+    function setTokenCompliance(address shareToken, address compliance_) external onlyOwner() {
         TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
         require(s.isShareToken[shareToken], "LuxShareFactory: invalid share token");
         require(compliance_ != address(0), "LuxShareFactory: invalid compliance address");
@@ -433,6 +442,37 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
      */
     function isShareToken(address shareToken) external view returns (bool) {
         return _isValidShareToken(shareToken);
+    }
+
+    // ==================== Agent Role Management ====================
+    /**
+     * @dev Add an agent role to an address
+     * @param agent The address to add the agent role to
+     */
+    function addAgentRole(address agent) external onlyOwner {
+        TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
+        s.agentRoles[agent] = true;
+        emit AgentRoleAdded(agent);
+    }
+
+    /**
+     * @dev Remove an agent role from an address
+     * @param agent The address to remove the agent role from
+     */
+    function removeAgentRole(address agent) external onlyOwner {
+        TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
+        s.agentRoles[agent] = false;
+        emit AgentRoleRemoved(agent);
+    }
+
+    /**
+     * @dev Check if an address has an agent role
+     * @param agent The address to check
+     * @return hasRole Whether the address has the agent role
+     */
+    function hasAgentRole(address agent) external view returns (bool hasRole) {
+        TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
+        return s.agentRoles[agent];
     }
 
     // ==================== Internal Helper Functions ====================
