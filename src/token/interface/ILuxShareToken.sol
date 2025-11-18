@@ -30,6 +30,7 @@ interface ILuxShareToken {
      * @param symbol_ Token symbol
      * @param decimals_ Token decimals
      * @param identityRegistry_ Identity registry address
+     * @param issuer_ Issuer address
      * @param compliance_ Compliance module address
      */
     function initialize(
@@ -37,6 +38,7 @@ interface ILuxShareToken {
         string memory symbol_,
         uint8 decimals_,
         address identityRegistry_,
+        address issuer_,
         address compliance_
     ) external;
     
@@ -130,6 +132,12 @@ interface ILuxShareToken {
     function getFrozenTokens(address addr) external view returns (uint256 amount);
 
     /**
+     * @dev Get issuer of the share token
+     * @return issuer The issuer address
+     */
+    function issuer() external view returns (address issuer);
+
+    /**
      *  @dev force a transfer of tokens between 2 whitelisted wallets
      *  In case the `from` address has not enough free tokens (unfrozen tokens)
      *  but has a total balance higher or equal to the `amount`
@@ -167,5 +175,34 @@ interface ILuxShareToken {
     
     function compliance() external view returns (IModularCompliance);
     function identityRegistry() external view returns (IIdentityRegistry);
+    
+    // Snapshot functions
+    
+    /**
+     * @dev Creates a snapshot of current balances and returns the snapshot ID
+     * @return snapshotId The ID of the created snapshot
+     */
+    function snapshot() external returns (uint256 snapshotId);
+    
+    /**
+     * @dev Get balance at a specific snapshot
+     * @param account The address to query
+     * @param snapshotId The snapshot ID
+     * @return balance The balance at the snapshot
+     */
+    function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256 balance);
+    
+    /**
+     * @dev Get total supply at a specific snapshot
+     * @param snapshotId The snapshot ID
+     * @return supply The total supply at the snapshot
+     */
+    function totalSupplyAt(uint256 snapshotId) external view returns (uint256 supply);
+    
+    /**
+     * @dev Get current snapshot ID
+     * @return snapshotId The current snapshot ID
+     */
+    function getCurrentSnapshotId() external view returns (uint256 snapshotId);
 }
 

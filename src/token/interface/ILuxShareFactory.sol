@@ -129,5 +129,12 @@ interface ILuxShareFactory {
      * @return hasRole Whether the address has the agent role
      */
     function hasAgentRole(address agent) external view returns (bool hasRole);
+
+    /**
+     * @dev Create a snapshot for a share token
+     * @param shareToken The address of the share token
+     * @return snapshotId The ID of the created snapshot
+     */
+    function createSnapshot(address shareToken) external returns (uint256 snapshotId);
 }
 

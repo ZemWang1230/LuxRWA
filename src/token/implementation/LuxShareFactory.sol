@@ -184,6 +184,7 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
             config.symbol,
             config.decimals,
             address(s.identityRegistry),
+            config.issuer,
             complianceToUse
         );
         
@@ -473,6 +474,22 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
     function hasAgentRole(address agent) external view returns (bool hasRole) {
         TokenStorage.ShareFactoryLayout storage s = TokenStorage.shareFactoryLayout();
         return s.agentRoles[agent];
+    }
+
+    // ==================== Snapshot Management ====================
+
+    /**
+     * @dev Create a snapshot for a share token
+     * @param shareToken The address of the share token
+     * @return snapshotId The ID of the created snapshot
+     */
+    function createSnapshot(address shareToken) external onlyAgentOrOwner returns (uint256 snapshotId) {
+        require(_isValidShareToken(shareToken), "LuxShareFactory: invalid share token");
+        
+        ILuxShareToken token = ILuxShareToken(shareToken);
+        snapshotId = token.snapshot();
+        
+        return snapshotId;
     }
 
     // ==================== Internal Helper Functions ====================

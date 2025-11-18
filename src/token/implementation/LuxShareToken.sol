@@ -51,6 +51,7 @@ contract LuxShareToken is ILuxShareToken {
         string memory symbol_,
         uint8 decimals_,
         address identityRegistry_,
+        address issuer_,
         address compliance_
     ) external override onlyFactory {
         TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
@@ -62,6 +63,7 @@ contract LuxShareToken is ILuxShareToken {
         s.symbol = symbol_;
         s.decimals = decimals_;
         s.identityRegistry = IIdentityRegistry(identityRegistry_);
+        s.issuer = issuer_;
         s.compliance = IModularCompliance(compliance_);
         s.paused = false;
         s.initialized = true;
@@ -127,6 +129,9 @@ contract LuxShareToken is ILuxShareToken {
         require(!s.paused, "LuxShareToken: token is paused");
         require(s.identityRegistry.isVerified(to), "LuxShareToken: recipient not verified");
 
+        // Update snapshot before balance change
+        _updateAccountSnapshots(address(0), toIdentity);
+
         s.totalSupply += amount;
         s.balances[toIdentity] += amount;
 
@@ -149,6 +154,9 @@ contract LuxShareToken is ILuxShareToken {
         require(fromIdentity != address(0), "LuxShareToken: sender not found");
         
         require(s.balances[fromIdentity] >= amount, "LuxShareToken: burn amount exceeds balance");
+
+        // Update snapshot before balance change
+        _updateAccountSnapshots(fromIdentity, address(0));
 
         s.balances[fromIdentity] -= amount;
         s.totalSupply -= amount;
@@ -265,6 +273,9 @@ contract LuxShareToken is ILuxShareToken {
         
         // Verify recipient identity
         require(s.identityRegistry.isVerified(to), "LuxShareToken: recipient not verified");
+
+        // Update snapshot before balance change
+        _updateAccountSnapshots(fromIdentity, toIdentity);
         
         // Perform transfer
         s.balances[fromIdentity] -= amount;
@@ -363,6 +374,15 @@ contract LuxShareToken is ILuxShareToken {
     function isRedeemable() external view returns (bool) {
         TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
         return s.redeemable;
+    }
+
+    /**
+     * @dev Get issuer of the share token
+     * @return issuer The issuer address
+     */
+    function issuer() external view override returns (address) {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        return s.issuer;
     }
 
     // ==================== ERC20 Standard Implementation ====================
@@ -502,6 +522,9 @@ contract LuxShareToken is ILuxShareToken {
         require(s.identityRegistry.isVerified(to), "LuxShareToken: recipient not verified");
         require(s.compliance.canTransfer(from, to, amount), "LuxShareToken: transfer not compliant");
 
+        // Update snapshot before balance change
+        _updateAccountSnapshots(fromIdentity, toIdentity);
+
         // Perform transfer
         s.balances[fromIdentity] -= amount;
         s.balances[toIdentity] += amount;
@@ -529,5 +552,100 @@ contract LuxShareToken is ILuxShareToken {
         s.allowances[ownerIdentity][spenderIdentity] = amount;
         
         emit Approval(ownerIdentity, spenderIdentity, amount);
+    }
+
+    // ==================== Snapshot Functions ====================
+
+    event Snapshot(uint256 id);
+
+    /**
+     * @dev Creates a snapshot of current balances and returns the snapshot ID
+     * @return snapshotId The ID of the created snapshot
+     */
+    function snapshot() external override onlyFactory returns (uint256 snapshotId) {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        
+        s.currentSnapshotId++;
+        snapshotId = s.currentSnapshotId;
+        
+        s.snapshotTotalSupply[snapshotId] = s.totalSupply;
+        
+        emit Snapshot(snapshotId);
+        
+        return snapshotId;
+    }
+
+    /**
+     * @dev Get balance at a specific snapshot
+     * @param account The address to query
+     * @param snapshotId The snapshot ID
+     * @return balance The balance at the snapshot
+     */
+    function balanceOfAt(address account, uint256 snapshotId) external view override returns (uint256 balance) {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        require(snapshotId > 0 && snapshotId <= s.currentSnapshotId, "LuxShareToken: invalid snapshot ID");
+
+        address accountIdentity = address(s.identityRegistry.identity(account));
+        if (accountIdentity == address(0)) {
+            return 0;
+        }
+
+        // If balance was explicitly recorded in this snapshot, return it
+        if (s.snapshotBalanceRecorded[snapshotId][accountIdentity]) {
+            return s.snapshotBalances[snapshotId][accountIdentity];
+        }
+
+        // For snapshots that were created before any transfers happened,
+        // we assume the balance hasn't changed since the snapshot was created
+        // This handles the case where snapshot is created after initial token distribution
+        return s.balances[accountIdentity];
+    }
+
+    /**
+     * @dev Get total supply at a specific snapshot
+     * @param snapshotId The snapshot ID
+     * @return supply The total supply at the snapshot
+     */
+    function totalSupplyAt(uint256 snapshotId) external view override returns (uint256 supply) {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        require(snapshotId > 0 && snapshotId <= s.currentSnapshotId, "LuxShareToken: invalid snapshot ID");
+        
+        return s.snapshotTotalSupply[snapshotId];
+    }
+
+    /**
+     * @dev Get current snapshot ID
+     * @return snapshotId The current snapshot ID
+     */
+    function getCurrentSnapshotId() external view override returns (uint256 snapshotId) {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        return s.currentSnapshotId;
+    }
+
+    /**
+     * @dev Update snapshot balances before balance change
+     * @param from The address sending tokens
+     * @param to The address receiving tokens
+     */
+    function _updateAccountSnapshots(address from, address to) internal {
+        TokenStorage.ShareTokenLayout storage s = TokenStorage.shareTokenLayout();
+        
+        if (s.currentSnapshotId == 0) {
+            return;
+        }
+        
+        uint256 currentSnapshotId = s.currentSnapshotId;
+        
+        // Update sender snapshot if balance hasn't been recorded for current snapshot
+        if (from != address(0) && !s.snapshotBalanceRecorded[currentSnapshotId][from]) {
+            s.snapshotBalances[currentSnapshotId][from] = s.balances[from];
+            s.snapshotBalanceRecorded[currentSnapshotId][from] = true;
+        }
+        
+        // Update receiver snapshot if balance hasn't been recorded for current snapshot
+        if (to != address(0) && !s.snapshotBalanceRecorded[currentSnapshotId][to]) {
+            s.snapshotBalances[currentSnapshotId][to] = s.balances[to];
+            s.snapshotBalanceRecorded[currentSnapshotId][to] = true;
+        }
     }
 }

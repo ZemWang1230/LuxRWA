@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "../interface/IPrimaryOffering.sol";
 import "../interface/IP2PTrading.sol";
+import "../interface/IRevenueDistribution.sol";
 
 /**
  * @title MarketStorage
@@ -90,6 +91,47 @@ library MarketStorage {
      */
     function p2pTradingLayout() internal pure returns (P2PTradingLayout storage s) {
         bytes32 position = P2P_TRADING_STORAGE_POSITION;
+        assembly {
+            s.slot := position
+        }
+    }
+    
+    // ==================== Revenue Distribution Storage ====================
+    
+    struct RevenueDistributionLayout {
+        // Distribution ID counter
+        uint256 nextDistributionId;
+        
+        // Distribution ID => Distribution
+        mapping(uint256 => IRevenueDistribution.Distribution) distributions;
+        
+        // Distribution ID => investor => claimed amount
+        mapping(uint256 => mapping(address => uint256)) claimedAmounts;
+        
+        // ShareToken => distribution IDs
+        mapping(address => uint256[]) shareTokenDistributions;
+        
+        // Issuer => distribution IDs
+        mapping(address => uint256[]) issuerDistributions;
+        
+        // Factory address
+        address factory;
+        
+        // Identity Registry address
+        address identityRegistry;
+        
+        // Initialized flag
+        bool initialized;
+    }
+    
+    // Storage position
+    bytes32 constant REVENUE_DISTRIBUTION_STORAGE_POSITION = keccak256("luxrwa.storage.revenue.distribution");
+    
+    /**
+     * @dev Returns the revenue distribution storage layout
+     */
+    function revenueDistributionLayout() internal pure returns (RevenueDistributionLayout storage s) {
+        bytes32 position = REVENUE_DISTRIBUTION_STORAGE_POSITION;
         assembly {
             s.slot := position
         }

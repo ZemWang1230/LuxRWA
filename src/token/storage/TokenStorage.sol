@@ -97,6 +97,7 @@ library TokenStorage {
         // Compliance and Identity (T-REX standard)
         IModularCompliance compliance;
         IIdentityRegistry identityRegistry;
+        address issuer;
         
         // Asset binding
         address assetNFTContract;
@@ -110,6 +111,12 @@ library TokenStorage {
         // Frozen wallets (compliance enforcement)
         mapping(address => bool) frozen;              // Fully frozen addresses
         mapping(address => uint256) frozenTokens;     // Partially frozen token amounts
+        
+        // Snapshot functionality
+        uint256 currentSnapshotId;                                   // Current snapshot ID counter
+        mapping(uint256 => mapping(address => uint256)) snapshotBalances;  // snapshotId => address => balance
+        mapping(uint256 => mapping(address => bool)) snapshotBalanceRecorded; // snapshotId => address => recorded
+        mapping(uint256 => uint256) snapshotTotalSupply;            // snapshotId => totalSupply
     }
 
     function shareTokenLayout() internal pure returns (ShareTokenLayout storage s) {
