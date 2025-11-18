@@ -6,13 +6,14 @@ import "./BaseFixture.sol";
 import "../src/market/implementation/PrimaryOffering.sol";
 import "../src/market/implementation/P2PTrading.sol";
 import "../src/token/implementation/LuxShareToken.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MarketTest is BaseFixture {
     // Test variables
     uint256 public offeringId;
     address public shareToken;
-    uint256 public totalShares = 10000 * 10**18; // 10,000 shares
-    uint256 public pricePerShare = 100 * 10**6; // 100 USDC per share (6 decimals)
+    uint256 public totalShares; 
+    uint256 public pricePerShare; 
 
     function setUp() public {
         // Setup base environment
@@ -27,6 +28,8 @@ contract MarketTest is BaseFixture {
 
         // Setup test data
         shareToken = shareTokenAddress1;
+        totalShares = 10000 * 10**LuxShareToken(shareToken).decimals(); // 10,000 shares
+        pricePerShare = 100 * 10**ERC20(usdc).decimals(); // 100 USDC per share (6 decimals)
     }
 
     // ==================== Test Primary Offering ====================
