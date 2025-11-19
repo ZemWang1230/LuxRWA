@@ -15,6 +15,7 @@ import "../src/token/storage/TokenStorage.sol";
 
 import "../src/market/implementation/PrimaryOffering.sol";
 import "../src/market/implementation/P2PTrading.sol";
+import "../src/market/implementation/Redemption.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // Mock USDC contract for testing
@@ -97,6 +98,9 @@ abstract contract BaseFixture is Test {
     // ============ Market System ============
     PrimaryOffering public primaryOffering;
     P2PTrading public p2pTrading;
+
+    // ============ Redemption System ============
+    Redemption public redemption;
 
     function ONCHAINIDSetUp() public virtual {
         // ============ Setup Accounts ============
@@ -453,6 +457,14 @@ abstract contract BaseFixture is Test {
         usdc.mint(investorBIA, 1000000 * 10**6); // 1M USDC
 
         console.log("USDC minted to investors");
+    }
+
+    function RedemptionSetUp() public virtual {
+        vm.startPrank(admin);
+        redemption = new Redemption(address(luxRWAFactory), address(identityRegistry));
+        luxRWAFactory.addAgentRole(address(redemption));
+        vm.stopPrank();
+        console.log("RedemptionSetUp completed!");
     }
 
     function _issueClaimToIdentity(
