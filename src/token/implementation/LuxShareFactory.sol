@@ -140,6 +140,18 @@ contract LuxShareFactory is ILuxShareFactory, Ownable {
         ILuxAssetNFT(assetNFT).verifyAsset(tokenId);
     }
 
+    /**
+     * @dev Transfer an asset NFT
+     * @param assetNFT The address of the AssetNFT contract
+     * @param from The address to transfer the asset from
+     * @param to The address to transfer the asset to
+     * @param tokenId The ID of the asset to transfer
+     */
+    function transferAssetNFT(address assetNFT, address from, address to, uint256 tokenId) external onlyAgentOrOwner {
+        require(_isValidAssetNFT(assetNFT), "LuxShareFactory: invalid asset NFT");
+        ILuxAssetNFT(assetNFT).transferFrom(from, to, tokenId);
+    }
+
     // ==================== Share Token Creation ====================
 
     /**

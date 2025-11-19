@@ -150,6 +150,21 @@ contract LuxAssetNFT is ILuxAssetNFT {
         s.assetMetadata[tokenId] = updatedMetadata;
     }
 
+    /**
+     * @dev Transfer a token from one address to another (only factory can transfer)
+     * @param from The user address to transfer from
+     * @param to The user address to transfer to
+     * @param tokenId The ID of the token
+     */
+    function transferFrom(address from, address to, uint256 tokenId) external override onlyFactory {
+        require(_exists(tokenId), "LuxAssetNFT: token does not exist");
+        TokenStorage.AssetNFTLayout storage s = TokenStorage.assetNFTLayout();
+        require(!s.frozenTokens[tokenId], "LuxAssetNFT: token is frozen");
+        require(s.owners[tokenId] == address(s.identityRegistry.identity(from)), "LuxAssetNFT: transfer from incorrect owner");
+        require(s.identityRegistry.isVerified(to), "LuxAssetNFT: recipient not verified");
+        _transfer(from, to, tokenId);
+    }
+
     // ==================== View Functions ====================
 
     /**

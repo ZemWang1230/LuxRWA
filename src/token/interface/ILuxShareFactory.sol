@@ -136,5 +136,22 @@ interface ILuxShareFactory {
      * @return snapshotId The ID of the created snapshot
      */
     function createSnapshot(address shareToken) external returns (uint256 snapshotId);
+
+    /**
+     * @dev Burn share tokens from an address
+     * @param shareToken The address of the share token
+     * @param from The address to burn tokens from
+     * @param amount The amount of tokens to burn
+     */
+    function burnShareTokens(address shareToken, address from, uint256 amount) external;
+
+    /**
+     * @dev Transfer an asset NFT
+     * @param assetNFT The address of the AssetNFT contract
+     * @param from The address to transfer the asset from
+     * @param to The address to transfer the asset to
+     * @param tokenId The ID of the asset to transfer
+     */
+    function transferAssetNFT(address assetNFT, address from, address to, uint256 tokenId) external;
 }
 
